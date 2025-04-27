@@ -17,7 +17,7 @@ SMALL_MODEL_PATH = "V02_Musa_Violence/yolo_small_weights.pt"  # small模型
 NANO_MODEL_PATH = "V02_Musa_Violence/Yolo_nano_weights.pt"  # nano模型
 # V01模型路径
 V01_MODEL_PATH = "V01_Yasser_Violence/weight/best.pt"  # V01模型
-TEST_IMAGE = "V02_Musa_Violence/test_images/1.jpg"
+TEST_IMAGE = "test_image/1.jpg"
 
 try:
     from ultralytics import YOLO

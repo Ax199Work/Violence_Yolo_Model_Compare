@@ -5,6 +5,18 @@
 1. V01 (Yasser) - 来自 [Violence_detection_YOLOv8](https://github.com/YasserElj/Violence_detection_YOLOv8)
 2. V02 (Musa) - 来自 [Fight-Violence-detection-yolov8](https://github.com/Musawer1214/Fight-Violence-detection-yolov8)
 
+## 比较结果
+
+模型性能比较表格:
+
+| 模型类型   | 加载时间(秒) | 检测时间(秒) | 总时间(秒) |
+|-----------|------------|------------|-----------|
+| V01       | 0.07       | 1.07       | 1.13      |
+| V02-SMALL | 0.06       | 0.28       | 0.34      |
+| V02-NANO  | 0.04       | 0.13       | 0.17      |
+
+从表格可以看出，V02-NANO模型性能最佳，总检测时间只需0.17秒，比V01模型快约6.6倍，比V02-SMALL模型快约2倍。
+
 ## 项目结构
 
 项目使用Git子模块来管理依赖的模型：
