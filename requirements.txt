@@ -1,0 +1,11 @@
+# 暴力检测项目核心依赖
+ultralytics>=8.0.20
+numpy>=1.24.0,<2.0.0  # 防止使用NumPy 2.0出现兼容性问题
+Pillow>=9.0.0
+opencv-python>=4.5.0
+torch>=2.0.0
+torchvision>=0.15.0
+
+# 可选依赖
+matplotlib>=3.5.0  # 用于可视化
+tqdm>=4.60.0  # 进度条显示

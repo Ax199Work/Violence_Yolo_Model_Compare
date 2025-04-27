@@ -1,0 +1,72 @@
+# Python环境相关
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 日志和临时文件
+*.log
+*.tmp
+logs/
+temp/
+tmp/
+
+# IDE 文件
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+.directory
+desktop.ini
+
+# 测试图像和视频（可选，如果需要保留测试数据则删除这部分）
+# test_images/
+# test_image/
+# videos/
+# *.mp4
+# *.avi
+
+# 模型权重文件（这些文件通常很大，可以选择不包含在版本控制中）
+# *.pt
+# *.pth
+# *.weights
+# *.onnx
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# 其他
+.env
+.env.*
+.coverage
+htmlcov/
+.pytest_cache/ 

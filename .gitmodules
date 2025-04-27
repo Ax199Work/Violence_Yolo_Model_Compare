@@ -1,0 +1,6 @@
+[submodule "V01_Yasser_Violence"]
+	path = V01_Yasser_Violence
+	url = https://github.com/YasserElj/Violence_detection_YOLOv8
+[submodule "V02_Musa_Violence"]
+	path = V02_Musa_Violence
+	url = https://github.com/Musawer1214/Fight-Violence-detection-yolov8
