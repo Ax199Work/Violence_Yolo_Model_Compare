@@ -27,7 +27,7 @@ except ImportError:
     print("请安装: pip install ultralytics")
     sys.exit(1)
 
-def test_model(model_path, image_path, save_path=None, model_name="未命名"):
+def test_model(model_path, image_path, save_path=None, model_name="未命名", warm_up=True, warm_up_rounds=2):
     """测试YOLO模型"""
     try:
         # 检查文件是否存在
@@ -52,9 +52,25 @@ def test_model(model_path, image_path, save_path=None, model_name="未命名"):
         if image is None:
             print(f"错误: 无法读取图像 {image_path}")
             return
+        
+        # 预热模型
+        if warm_up:
+            print("\n===== 预热模型 =====")
+            warm_up_times = []
+            
+            for i in range(warm_up_rounds):
+                print(f"预热轮次 {i+1}/{warm_up_rounds}...")
+                warm_up_start = time.time()
+                model(image)
+                warm_up_time = time.time() - warm_up_start
+                warm_up_times.append(warm_up_time)
+                print(f"预热轮次 {i+1} 耗时: {warm_up_time:.2f} 秒")
+            
+            avg_warm_up_time = sum(warm_up_times) / len(warm_up_times)
+            print(f"平均预热时间: {avg_warm_up_time:.2f} 秒")
             
         # 运行检测
-        print("开始检测...")
+        print("\n开始检测...")
         detect_start_time = time.time()
         results = model(image)
         detect_time = time.time() - detect_start_time
@@ -107,6 +123,8 @@ def test_model(model_path, image_path, save_path=None, model_name="未命名"):
         # 打印性能信息
         print(f"\n===== 性能信息 =====")
         print(f"模型加载时间: {load_time:.2f} 秒")
+        if warm_up:
+            print(f"平均预热时间: {avg_warm_up_time:.2f} 秒")
         print(f"检测时间: {detect_time:.2f} 秒")
         print(f"总时间: {load_time + detect_time:.2f} 秒")
             
@@ -117,17 +135,17 @@ def test_model(model_path, image_path, save_path=None, model_name="未命名"):
         return None, None, 0, 0
 
 # 测试V02模型的简化函数
-def test_v02_model(model_path, image_path, save_path=None):
+def test_v02_model(model_path, image_path, save_path=None, warm_up=True, warm_up_rounds=2):
     """测试V02模型 - 兼容旧版本调用"""
     model_name = "V02-Small" if "small" in model_path.lower() else "V02-Nano"
-    return test_model(model_path, image_path, save_path, model_name)
+    return test_model(model_path, image_path, save_path, model_name, warm_up, warm_up_rounds)
 
 # 测试V01模型的简化函数
-def test_v01_model(image_path, save_path=None):
+def test_v01_model(image_path, save_path=None, warm_up=True, warm_up_rounds=2):
     """测试V01模型"""
-    return test_model(V01_MODEL_PATH, image_path, save_path, "V01-Yasser")
+    return test_model(V01_MODEL_PATH, image_path, save_path, "V01-Yasser", warm_up, warm_up_rounds)
 
-def compare_models(image_path=TEST_IMAGE, include_v01=True):
+def compare_models(image_path=TEST_IMAGE, include_v01=True, warm_up=True, warm_up_rounds=2):
     """比较所有模型的性能"""
     print("\n" + "="*50)
     print("开始模型比较测试...")
@@ -140,7 +158,7 @@ def compare_models(image_path=TEST_IMAGE, include_v01=True):
         print("\n" + "*"*30)
         print("测试 V01 模型")
         print("*"*30)
-        v01_result = test_v01_model(image_path)
+        v01_result = test_v01_model(image_path, warm_up=warm_up, warm_up_rounds=warm_up_rounds)
         if v01_result:
             _, _, v01_load_time, v01_detect_time = v01_result
             results["V01"] = {"load": v01_load_time, "detect": v01_detect_time, "total": v01_load_time + v01_detect_time}
@@ -151,7 +169,7 @@ def compare_models(image_path=TEST_IMAGE, include_v01=True):
     print("\n" + "*"*30)
     print("测试 V02-SMALL 模型")
     print("*"*30)
-    small_result = test_v02_model(SMALL_MODEL_PATH, image_path)
+    small_result = test_v02_model(SMALL_MODEL_PATH, image_path, warm_up=warm_up, warm_up_rounds=warm_up_rounds)
     if small_result:
         _, _, small_load_time, small_detect_time = small_result
         results["V02-SMALL"] = {"load": small_load_time, "detect": small_detect_time, "total": small_load_time + small_detect_time}
@@ -162,7 +180,7 @@ def compare_models(image_path=TEST_IMAGE, include_v01=True):
     print("\n" + "*"*30)
     print("测试 V02-NANO 模型")
     print("*"*30)
-    nano_result = test_v02_model(NANO_MODEL_PATH, image_path)
+    nano_result = test_v02_model(NANO_MODEL_PATH, image_path, warm_up=warm_up, warm_up_rounds=warm_up_rounds)
     if nano_result:
         _, _, nano_load_time, nano_detect_time = nano_result
         results["V02-NANO"] = {"load": nano_load_time, "detect": nano_detect_time, "total": nano_load_time + nano_detect_time}
@@ -209,31 +227,80 @@ def main():
         # 解析命令行参数
         if sys.argv[1] == "--compare":
             # 比较模式
-            image_path = sys.argv[2] if len(sys.argv) > 2 else TEST_IMAGE
+            image_path = sys.argv[2] if len(sys.argv) > 2 and os.path.exists(sys.argv[2]) else TEST_IMAGE
             include_v01 = True
-            if len(sys.argv) > 3 and sys.argv[3] == "--no-v01":
+            warm_up = True
+            warm_up_rounds = 2
+            
+            if "--no-v01" in sys.argv:
                 include_v01 = False
-            compare_models(image_path, include_v01)
+            if "--no-warm-up" in sys.argv:
+                warm_up = False
+            if "--warm-up-rounds" in sys.argv:
+                try:
+                    rounds_idx = sys.argv.index("--warm-up-rounds")
+                    if rounds_idx + 1 < len(sys.argv):
+                        warm_up_rounds = int(sys.argv[rounds_idx + 1])
+                except (ValueError, IndexError):
+                    pass
+                
+            compare_models(image_path, include_v01, warm_up, warm_up_rounds)
         elif sys.argv[1] == "--v01":
             # 仅测试V01模型
-            image_path = sys.argv[2] if len(sys.argv) > 2 else TEST_IMAGE
-            test_v01_model(image_path)
+            image_path = sys.argv[2] if len(sys.argv) > 2 and os.path.exists(sys.argv[2]) else TEST_IMAGE
+            warm_up = "--no-warm-up" not in sys.argv
+            warm_up_rounds = 2
+            if "--warm-up-rounds" in sys.argv:
+                try:
+                    rounds_idx = sys.argv.index("--warm-up-rounds")
+                    if rounds_idx + 1 < len(sys.argv):
+                        warm_up_rounds = int(sys.argv[rounds_idx + 1])
+                except (ValueError, IndexError):
+                    pass
+            test_v01_model(image_path, warm_up=warm_up, warm_up_rounds=warm_up_rounds)
         elif sys.argv[1] == "--v02-small":
             # 仅测试V02-Small模型
-            image_path = sys.argv[2] if len(sys.argv) > 2 else TEST_IMAGE
-            test_v02_model(SMALL_MODEL_PATH, image_path)
+            image_path = sys.argv[2] if len(sys.argv) > 2 and os.path.exists(sys.argv[2]) else TEST_IMAGE
+            warm_up = "--no-warm-up" not in sys.argv
+            warm_up_rounds = 2
+            if "--warm-up-rounds" in sys.argv:
+                try:
+                    rounds_idx = sys.argv.index("--warm-up-rounds")
+                    if rounds_idx + 1 < len(sys.argv):
+                        warm_up_rounds = int(sys.argv[rounds_idx + 1])
+                except (ValueError, IndexError):
+                    pass
+            test_v02_model(SMALL_MODEL_PATH, image_path, warm_up=warm_up, warm_up_rounds=warm_up_rounds)
         elif sys.argv[1] == "--v02-nano":
             # 仅测试V02-Nano模型
-            image_path = sys.argv[2] if len(sys.argv) > 2 else TEST_IMAGE
-            test_v02_model(NANO_MODEL_PATH, image_path)
+            image_path = sys.argv[2] if len(sys.argv) > 2 and os.path.exists(sys.argv[2]) else TEST_IMAGE
+            warm_up = "--no-warm-up" not in sys.argv
+            warm_up_rounds = 2
+            if "--warm-up-rounds" in sys.argv:
+                try:
+                    rounds_idx = sys.argv.index("--warm-up-rounds")
+                    if rounds_idx + 1 < len(sys.argv):
+                        warm_up_rounds = int(sys.argv[rounds_idx + 1])
+                except (ValueError, IndexError):
+                    pass
+            test_v02_model(NANO_MODEL_PATH, image_path, warm_up=warm_up, warm_up_rounds=warm_up_rounds)
         else:
             # 使用指定的模型文件
             model_path = sys.argv[1]
-            image_path = sys.argv[2] if len(sys.argv) > 2 else TEST_IMAGE
-            test_model(model_path, image_path, model_name="自定义模型")
+            image_path = sys.argv[2] if len(sys.argv) > 2 and os.path.exists(sys.argv[2]) else TEST_IMAGE
+            warm_up = "--no-warm-up" not in sys.argv
+            warm_up_rounds = 2
+            if "--warm-up-rounds" in sys.argv:
+                try:
+                    rounds_idx = sys.argv.index("--warm-up-rounds")
+                    if rounds_idx + 1 < len(sys.argv):
+                        warm_up_rounds = int(sys.argv[rounds_idx + 1])
+                except (ValueError, IndexError):
+                    pass
+            test_model(model_path, image_path, model_name="自定义模型", warm_up=warm_up, warm_up_rounds=warm_up_rounds)
     else:
         # 默认执行比较
-        compare_models()
+        compare_models(warm_up=True, warm_up_rounds=2)
 
 if __name__ == "__main__":
     main() 
