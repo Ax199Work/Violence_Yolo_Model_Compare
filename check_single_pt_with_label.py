@@ -48,7 +48,7 @@ def open_image(image_path):
     except Exception as e:
         print(f"无法打开图像: {e}")
 
-def test_model(model_path, image_path, save_path=None, model_name=None, auto_open=True, warm_up=True, warm_up_rounds=2):
+def test_model(model_path, image_path, save_path=None, model_name=None, auto_open=True, warm_up=True, warm_up_image="pre_warm.png"):
     """Test YOLO model"""
     try:
         # If model name not provided, extract from path
@@ -91,20 +91,26 @@ def test_model(model_path, image_path, save_path=None, model_name=None, auto_ope
         
         # 预热模型
         if warm_up:
-            print("\n===== 预热模型 =====")
-            warm_up_times = []
-            
-            for i in range(warm_up_rounds):
-                print(f"预热轮次 {i+1}/{warm_up_rounds}...")
+            if os.path.exists(warm_up_image):
+                print(f"\n===== 使用 {warm_up_image} 预热模型 =====")
+                warm_up_img = cv2.imread(warm_up_image)
+                if warm_up_img is None:
+                    print(f"警告：无法读取预热图像 {warm_up_image}，将使用目标图像进行预热")
+                    warm_up_img = image
+                
+                warm_up_start = time.time()
+                model(warm_up_img)
+                warm_up_time = time.time() - warm_up_start
+                print(f"预热耗时: {warm_up_time:.2f} 秒")
+            else:
+                print(f"\n===== 预热模型 =====")
+                print(f"警告：预热图像 {warm_up_image} 不存在，使用目标图像进行预热")
+                
                 warm_up_start = time.time()
                 model(image)
                 warm_up_time = time.time() - warm_up_start
-                warm_up_times.append(warm_up_time)
-                print(f"预热轮次 {i+1} 耗时: {warm_up_time:.2f} 秒")
-            
-            avg_warm_up_time = sum(warm_up_times) / len(warm_up_times)
-            print(f"平均预热时间: {avg_warm_up_time:.2f} 秒")
-            
+                print(f"预热耗时: {warm_up_time:.2f} 秒")
+        
         # Run detection - Only measure the model inference time
         print("\n开始检测...")
         detect_start_time = time.time()
@@ -160,7 +166,7 @@ def test_model(model_path, image_path, save_path=None, model_name=None, auto_ope
         print(f"\n===== 性能信息 =====")
         print(f"模型加载时间: {load_time:.2f} 秒")
         if warm_up:
-            print(f"平均预热时间: {avg_warm_up_time:.2f} 秒")
+            print(f"预热耗时: {warm_up_time:.2f} 秒")
         print(f"检测时间: {detect_time:.2f} 秒")
         print(f"总时间: {load_time + detect_time:.2f} 秒")
         
@@ -330,18 +336,11 @@ def main():
     
     # Whether to use warm-up
     warm_up = "--no-warm-up" not in sys.argv
-    warm_up_rounds = 2
-    
-    if "--warm-up-rounds" in sys.argv:
-        try:
-            rounds_idx = sys.argv.index("--warm-up-rounds")
-            if rounds_idx + 1 < len(sys.argv):
-                warm_up_rounds = int(sys.argv[rounds_idx + 1])
-        except (ValueError, IndexError):
-            pass
+    warm_up_image = "pre_warm.png"  # 默认使用pre_warm.png进行预热
     
     # Execute test
-    test_model(model_path, image_path, save_path, auto_open=auto_open, warm_up=warm_up, warm_up_rounds=warm_up_rounds)
+    test_model(model_path, image_path, save_path, auto_open=auto_open, 
+              warm_up=warm_up, warm_up_image=warm_up_image)
 
 if __name__ == "__main__":
     main() 
